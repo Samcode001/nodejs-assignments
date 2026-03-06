@@ -22,6 +22,8 @@
     Response: 201 Created with the ID of the created todo item in JSON format. eg: {id: 1}
     Example: POST http://localhost:3000/todos
     Request Body: { "title": "Buy groceries", "completed": false, description: "I should buy groceries" }
+
+    
     
   4. PUT /todos/:id - Update an existing todo item by ID
     Description: Updates an existing todo item identified by its ID.
@@ -39,11 +41,119 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  module.exports = app;
+const express = require("express");
+const bodyParser = require("body-parser");
+const fs = require("fs");
+
+const app = express();
+
+app.use(bodyParser.json());
+
+let todos = [];
+let todosIndex = 1;
+
+app.post("/todos", async (req, res) => {
+  try {
+    const { title, completed, description } = req.body;
+    // console.log(title, completed, description);
+    const newTodo = {
+      id: todosIndex++,
+      title,
+      description,
+      completed,
+    };
+
+    fs.readFile("./files/a.txt", "utf-8", (err, data) => {
+      if (err) return res.send(`Error on Reading Data ${err}`);
+      if (data) todos = JSON.parse(data);
+      todos.push(newTodo);
+      fs.writeFile("./files/a.txt", JSON.stringify(todos), (err) => {
+        if (err) return res.send("Error on Wirting the file ");
+        res.status(201).json({ id: newTodo.id });
+      });
+    });
+  } catch (error) {
+    res.status(500).send(`Inter nal server Error ${error}`);
+  }
+});
+
+app.get("/todos", async (req, res) => {
+  try {
+    fs.readFile("./files/a.txt", "utf-8", (err, data) => {
+      if (err) req.status(400).send(`Error on reading file ${err}`);
+      if (data) todos = JSON.parse(data);
+      res.send(todos);
+    });
+  } catch (error) {
+    res.status(500).send(`Internal Server Error ${error}`);
+  }
+});
+
+app.get("/todos/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    fs.readFile("./files/a.txt", "utf-8", (err, data) => {
+      if (err) res.status(400).send(`Errro on reading file ${err}`);
+
+      if (data) todos = JSON.parse(data);
+      let todo = todos.find((e) => e.id === Number(id));
+      if (!todo) return res.status(404).send("Not Found");
+
+      res.status(200).send(todo);
+    });
+  } catch (error) {
+    res.status(500).send(`Internal Server Error ${error}`);
+  }
+});
+
+app.put("/todos/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { title, completed } = req.body;
+    fs.readFile("./files/a.txt", "utf-8", (err, data) => {
+      if (err) return res.status(400).send(`Error on reading File ${err}`);
+
+      if (data) todos = JSON.parse(data);
+      let todoIndex = todos.findIndex((e) => e.id === Number(id));
+      if (todoIndex === -1) return res.status(404).send("Not pound");
+      todos[todoIndex].title = title;
+      todos[todoIndex].completed = completed;
+
+      fs.writeFile("./files/a.txt", JSON.stringify(todos), (err) => {
+        if (err) return res.status(400).send("Error on writing file");
+
+        res.status(200).send(`todo updated`);
+      });
+    });
+  } catch (error) {
+    res.status(500).send(`Internal Server Error ${error}`);
+  }
+});
+
+app.delete("/todos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    fs.readFile("./files/a.txt", "utf-8", (err, data) => {
+      if (err) return res.status(401).send(`Error in reading file ${err}`);
+
+      if (data) todos = JSON.parse(data);
+      const todo = todos.find((e) => e.id === Number(id));
+      if (!todo) return res.status(404).send("Not Found");
+      todos = todos.filter((e) => e.id !== Number(id));
+
+      fs.writeFile("./files/a.txt", JSON.stringify(todos), (err) => {
+        if (err) return res.status(401).send("Error on writing FIle");
+
+        res.status(200).send("Deleted");
+      });
+    });
+  } catch (error) {
+    res.status(500).send(`Internal Server eroor ${error}`);
+  }
+});
+
+// app.listen(3000, () => {
+//   console.log("Server is listening on 3000");
+// });
+
+module.exports = app;
