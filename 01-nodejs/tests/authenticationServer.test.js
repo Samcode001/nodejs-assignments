@@ -61,7 +61,7 @@ describe('API Tests', () => {
     expect(responseBody.firstName).toBe(firstName);
     expect(responseBody.lastName).toBe(lastName);
 
-    authToken = responseBody.authToken;
+    let authToken = responseBody.authToken;
   });
 
   it('should return unauthorized for accessing protected data without authentication', async () => {
